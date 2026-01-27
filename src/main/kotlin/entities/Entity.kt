@@ -1,6 +1,8 @@
+@file:OptIn(kotlin.time.ExperimentalTime::class) // Dosya bazında genel onay
+
 package org.erbalkan.kernel.entities
 
-import java.time.Instant
+import kotlin.time.Instant
 
 interface Entity<ID> {
     val id: ID?
