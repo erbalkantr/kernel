@@ -88,3 +88,12 @@ val registerUseCase = CreateUserUseCase(repo, mapper)
 
 Fark ettiysen, CompositeValidator'ı kullanıcının gözünden sakladık. Kullanıcı sadece kural eklediğini sanıyor ama biz arka planda Composite Pattern kullanarak işi optimize ediyoruz. İşte "Uzman Yazılım Geliştirici" bakış açısı tam olarak budur: Karmaşıklığı içeride çöz, dışarıya tertemiz bir API sun.
 */
+
+
+/**
+ * Tüm UseCase'ler için 'decorate' yeteneği kazandırır.
+ * Bu sayede 'CreateUserUseCase(...).decorate()' diyerek zinciri başlatabiliriz.
+ */
+fun <TRequest, TResponse : Result> UseCase<TRequest, TResponse>.decorate(): UseCaseBuilder<TRequest, TResponse> {
+    return UseCaseBuilder(this)
+}

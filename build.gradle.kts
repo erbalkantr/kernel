@@ -14,7 +14,7 @@ afterEvaluate {
 
                 groupId = "com.github.erbalkantr"
                 artifactId = "kernel"
-                version = "1.0.2"
+                version = "1.0.3"
             }
         }
     }
