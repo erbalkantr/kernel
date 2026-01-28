@@ -9,51 +9,52 @@ import org.jetbrains.exposed.v1.core.statements.UpdateBuilder
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insertAndGetId
 import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
 
-abstract class ExposedRepositoryTemplate
-<TEntity: Entity<ID>, ID: Comparable<ID>, TTable: IdTable<ID>>
-    (protected val table: TTable) : Repository<TEntity, ID> {
-    // --- Soyut Metodlar: Alt sınıflar (Örn: UserRepository) bunları dolduracak ---
-    // Veritabanı satırını (ResultRow) alıp kotlin nesnesine (TEntity) çevirir.
+
+abstract class ExposedRepositoryTemplate<TEntity : Entity<ID>, ID : Comparable<ID>, TTable : IdTable<ID>>(
+    protected val table: TTable
+) : Repository<TEntity, ID> {
+
+    // 1. Soyut Dönüştürücüler (Alt sınıfa bırakılan işler)
     abstract fun rowToEntity(row: ResultRow): TEntity
-    // TEntity verilerini veritabanı kolonlarına(statement) yerleştirir
     abstract fun TTable.mapToTable(statement: UpdateBuilder<*>, entity: TEntity)
-    // --- Okuma işlemleri (Read) ---
-    // FindById
-    override fun findById(id: ID): TEntity? = transaction {
+
+    // 2. ID ile Getirme
+    override suspend fun findById(id: ID): TEntity? = suspendTransaction {
         table.selectAll().where { table.id eq id }
-            .map { rowToEntity(it) }.singleOrNull()
+            .map { rowToEntity(it) }
+            .singleOrNull()
     }
-    // FindAll
-    override fun findAll(): List<TEntity> = transaction {
+
+    // 3. Hepsini Getirme
+    override suspend fun findAll(): List<TEntity> = suspendTransaction {
         table.selectAll().map { rowToEntity(it) }
     }
-    // ExistById
-    override fun existsById(id: ID): Boolean = transaction {
+
+    // 4. Varlık Kontrolü
+    override suspend fun existsById(id: ID): Boolean = suspendTransaction {
         table.selectAll().where { table.id eq id }.count() > 0
     }
-    // --- Yazma işlemleri (Write) ---
-    // Insert
-    override fun insert(entity: TEntity): TEntity = transaction {
-        // insertAndGetId -> tablodaki otomatik artan ID'yi döner.
-        val newId = table.insertAndGetId { mapToTable(it,entity) }
-        // eklenen nesneyi yeni ID'si ile beraber tekrar çekip dönüyoruz.
-        findById(newId.value)!!
+
+    // 5. Kayıt Ekleme
+    override suspend fun insert(entity: TEntity): TEntity = suspendTransaction {
+        val newId = table.insertAndGetId { mapToTable(it, entity) }
+        findById(newId.value)!! // Veritabanındaki en güncel halini (default değerlerle) döner
     }
-    // Update
-    override fun update(entity: TEntity): TEntity = transaction {
+
+    // 6. Güncelleme
+    override suspend fun update(entity: TEntity): TEntity = suspendTransaction {
         val entityId = entity.id ?: throw IllegalArgumentException("Güncelleme için ID gereklidir.")
-        table.update(where = {table.id eq entityId}){
-            mapToTable(it,entity)
-        }
+        table.update({ table.id eq entityId }) { mapToTable(it, entity) }
         entity
     }
-    // Delete
-    override fun delete(id: ID) = transaction {
+
+    // 7. Silme
+    override suspend fun delete(id: ID): Unit = suspendTransaction {
         table.deleteWhere { table.id eq id }
-        Unit // Kotlin'de void karşılığıdır.
     }
 }
 

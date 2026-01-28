@@ -9,7 +9,7 @@ class LoggingDecorator<in TRequest, out TResponse: Result>(
 ) : UseCaseDecorator<TRequest,TResponse>(decorated) {
 
     private val logger = Logger.getLogger(decorated.javaClass.name)
-    override fun execute(request: TRequest): TResponse {
+    override suspend fun execute(request: TRequest): TResponse {
         val useCaseName = decorated.javaClass.simpleName
         logger.info("[START] Executing $useCaseName with request: $request")
 

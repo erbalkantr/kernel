@@ -6,7 +6,7 @@ import org.erbalkan.kernel.utilities.results.Result
 abstract class UseCaseDecorator<in TRequest, out TResponse: Result>(
     protected val decorated: UseCase<TRequest,TResponse>
 ) : UseCase<TRequest,TResponse> {
-    override fun execute(request: TRequest): TResponse {
+    override suspend fun execute(request: TRequest): TResponse {
         // Alt sınıflar(logging,validation vb.) burada ek işlevler ekleyecek.
         return decorated.execute(request)
     }

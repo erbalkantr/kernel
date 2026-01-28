@@ -10,7 +10,7 @@ class ValidationDecorator<in TRequest, out TResponse: Result>(
     // Buraya compositeValidator gelebilir.
 ) : UseCaseDecorator<TRequest, TResponse>(decorated) {
 
-    override fun execute(request: TRequest): TResponse {
+    override suspend fun execute(request: TRequest): TResponse {
         val error = validator.validate(request)
         if(error != null) return super.createError(error)
         return decorated.execute(request)

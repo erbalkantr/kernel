@@ -7,7 +7,7 @@ import org.erbalkan.kernel.utilities.results.Result
  * TResponse: İşlemin çıktı tipi (Örn: DataResult<UserDto>)
  */
 interface UseCase<in TRequest, out TResponse: Result> {
-    fun execute(request: TRequest): TResponse
+    suspend fun execute(request: TRequest): TResponse
     // Hata durumunda dönecek nesneyi oluşturma sorumluluğu
     fun createError(message: String): TResponse
 }
