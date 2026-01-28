@@ -1,7 +1,9 @@
 val exposedVersion = "1.0.0-rc-4"
-
+val kotlinXserializationVersion = "1.10.0"
 plugins {
     kotlin("jvm") version "2.2.21"
+    kotlin("plugin.serialization") version "2.2.21"
+
     `maven-publish` // Maven yayınlama eklentisini ekleyin
 }
 
@@ -14,7 +16,7 @@ afterEvaluate {
 
                 groupId = "com.github.erbalkantr"
                 artifactId = "kernel"
-                version = "1.0.3"
+                version = "1.0.4"
             }
         }
     }
@@ -27,6 +29,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-dao:${exposedVersion}")
     implementation("org.jetbrains.exposed:exposed-jdbc:${exposedVersion}")
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:${exposedVersion}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${kotlinXserializationVersion}")
 }
 
 kotlin {

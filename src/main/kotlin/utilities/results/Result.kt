@@ -1,13 +1,30 @@
 package org.erbalkan.kernel.utilities.results
 
-sealed class Result(val success: Boolean, val message: String?)
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
-class SuccessResult(message: String? = null) : Result(true, message)
-class ErrorResult(message: String? = null) : Result(false, message)
+@Serializable
+open class Result(
+    open val success: Boolean,
+    open val message: String? = null
+)
 
-// İçinde veri de barındıran sonuçlar
-sealed class DataResult<T>(success: Boolean, message: String?, val data: T?) : Result(success, message)
+@Serializable
+open class DataResult<T>(
+    val data: T?,
+    // @Transient ile bu alanın JSON'da tekrar edilmesini engelliyoruz
+    @Transient override val success: Boolean = false,
+    @Transient override val message: String? = null
+) : Result(success, message)
 
-class SuccessDataResult<T>(data: T, message: String? = null) : DataResult<T>(true, message, data)
-class ErrorDataResult<T>(message: String? = null, data: T? = null) : DataResult<T>(false, message, data)
+@Serializable
+class SuccessDataResult<T>(
+    val resultData: T? = null,
+    @Transient override val message: String? = null
+) : DataResult<T>(resultData, true, message) // success her zaman true
 
+@Serializable
+class ErrorDataResult<T>(
+    val resultData: T? = null,
+    @Transient override val message: String? = null
+) : DataResult<T>(resultData, false, message) // success her zaman false
