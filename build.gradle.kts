@@ -1,8 +1,8 @@
 val exposedVersion = "1.0.0-rc-4"
 val kotlinXserializationVersion = "1.10.0"
 plugins {
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.serialization") version "2.2.21"
 
     `maven-publish` // Maven yayınlama eklentisini ekleyin
 }
