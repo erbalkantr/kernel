@@ -1,8 +1,8 @@
 val exposedVersion = "1.0.0-rc-4"
 val kotlinXserializationVersion = "1.10.0"
 plugins {
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.serialization") version "2.2.21"
+    kotlin("jvm") version "2.1.0"
+    kotlin("plugin.serialization") version "2.1.0"
 
     `maven-publish` // Maven yayınlama eklentisini ekleyin
 }
@@ -16,7 +16,7 @@ afterEvaluate {
 
                 groupId = "com.github.erbalkantr"
                 artifactId = "kernel"
-                version = "1.0.4"
+                version = "2.0.1"
             }
         }
     }
