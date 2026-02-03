@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 val exposedVersion = "1.0.0-rc-4"
 val kotlinXserializationVersion = "1.10.0"
-val ktor_version = "3.1.0"
+val ktor_version = "3.4.0"
 plugins {
     kotlin("jvm") version "2.2.21"
     kotlin("plugin.serialization") version "2.2.21"
