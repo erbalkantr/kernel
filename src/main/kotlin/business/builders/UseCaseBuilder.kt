@@ -6,13 +6,17 @@ import org.erbalkan.kernel.business.decorators.TransactionDecorator
 import org.erbalkan.kernel.business.decorators.ValidationDecorator
 import org.erbalkan.kernel.business.validator.CompositeValidator
 import org.erbalkan.kernel.business.validator.Validator
+import org.erbalkan.kernel.security.data.Role
+import org.erbalkan.kernel.security.decorator.RoleDecorator
 import org.erbalkan.kernel.utilities.results.Result
 
-class UseCaseBuilder<TRequest,TResponse: Result>(
-    private var useCase: UseCase<TRequest,TResponse>
-){
-    // Kuralları biriktirdiğimiz liste
+class UseCaseBuilder<TRequest, TResponse : Result>(
+    private var useCase: UseCase<TRequest, TResponse>
+) {
+    // Kuralları ve Rolleri biriktirdiğimiz listeler
     private val validators = mutableListOf<Validator<TRequest>>()
+    private val requiredRoles = mutableListOf<Role>()
+
     private var isLoggingEnabled = false
     private var isTransactionEnabled = false
 
@@ -21,6 +25,7 @@ class UseCaseBuilder<TRequest,TResponse: Result>(
         validators.add(validator)
         return this
     }
+
     // 2. Anlık (lambda) kural eklemek için (Pratik kullanım)
     fun withRule(rule: (TRequest) -> String?): UseCaseBuilder<TRequest, TResponse> {
         validators.add(object : Validator<TRequest> {
@@ -28,31 +33,46 @@ class UseCaseBuilder<TRequest,TResponse: Result>(
         })
         return this
     }
+
+    // 3. Yetki/Rol eklemek için
+    fun withRole(role: Role): UseCaseBuilder<TRequest, TResponse> {
+        requiredRoles.add(role)
+        return this
+    }
+
     fun withLogging(): UseCaseBuilder<TRequest, TResponse> {
         isLoggingEnabled = true
         return this
     }
+
     fun withTransaction(): UseCaseBuilder<TRequest, TResponse> {
         isTransactionEnabled = true
         return this
     }
+
     /**
      * Zinciri inşa ettiğimiz yer.
-     * Sıralama önemlidir: Genelde Logging -> Transaction -> Validation -> UseCase
+     * Sıralama Mantığı: Logging (En dış) -> Transaction -> Role Check -> Validation -> UseCase (En iç)
      */
     fun build(): UseCase<TRequest, TResponse> {
-        // Önce validasyonları tek bir paket (Composite) yapalım ve sarmalayalım
+
+        // Katman 1: Validasyon (İş mantığına en yakın katman)
         if (validators.isNotEmpty()) {
             val composite = CompositeValidator(validators)
             useCase = ValidationDecorator(useCase, composite)
         }
 
-        // Sonra Transaction katmanını ekleyelim
+        // Katman 2: Rol Kontrolü (Validasyondan geçse bile yetkisi yoksa burada durur)
+        if (requiredRoles.isNotEmpty()) {
+            useCase = RoleDecorator(useCase, requiredRoles)
+        }
+
+        // Katman 3: Veritabanı Transaction yönetimi
         if (isTransactionEnabled) {
             useCase = TransactionDecorator(useCase)
         }
 
-        // En dışa Logging katmanını ekleyelim (Tüm süreci izlemek için)
+        // Katman 4: Loglama (Hataları ve tüm süreci en dıştan izlemek için)
         if (isLoggingEnabled) {
             useCase = LoggingDecorator(useCase)
         }
@@ -61,38 +81,8 @@ class UseCaseBuilder<TRequest,TResponse: Result>(
     }
 }
 
-/*
-Neyi Çözdük? Neden Bu Daha İyi?
-
-    Performans (Katman Yönetimi): Eğer 10 tane kuralın varsa, Builder bunları validators listesinde toplar. build() anında tek bir ValidationDecorator oluşturur. Eğer her kural için ayrı dekoratör oluşturulsaydı, hafızada 10 katmanlı bir nesne olacaktı. Şimdi sadece 1 katman var.
-
-    Okunabilirlik: Kullanıcı (geliştirici) withRule diyerek hızlıca kural ekleyebilir veya withValidator diyerek karmaşık bir validator sınıfını enjekte edebilir.
-
-    Sıralama Kontrolü: build() metodunun içinde dekoratörlerin eklenme sırasını biz kontrol ediyoruz.
-
-        Örnek: Loglamayı en dışa koyduk ki validasyon hatası alsa bile loglansın.
-
-        Örnek: Validasyonu transaction'ın içine veya dışına koyma kararını merkezi olarak buradan yönetebiliriz.
-
-
-val registerUseCase = CreateUserUseCase(repo, mapper)
-    .decorate()
-    .withLogging()
-    .withTransaction()
-    .withRule { req -> if (req.email.isBlank()) "Email boş olamaz" else null }
-    .withRule { req -> if (req.password.length < 8) "Şifre kısa" else null }
-    .withValidator(ComplexUserValidator(repo)) // Veritabanı kontrolü yapan ağır kural
-    .build()
-
-    Mentor Notu
-
-Fark ettiysen, CompositeValidator'ı kullanıcının gözünden sakladık. Kullanıcı sadece kural eklediğini sanıyor ama biz arka planda Composite Pattern kullanarak işi optimize ediyoruz. İşte "Uzman Yazılım Geliştirici" bakış açısı tam olarak budur: Karmaşıklığı içeride çöz, dışarıya tertemiz bir API sun.
-*/
-
-
 /**
  * Tüm UseCase'ler için 'decorate' yeteneği kazandırır.
- * Bu sayede 'CreateUserUseCase(...).decorate()' diyerek zinciri başlatabiliriz.
  */
 fun <TRequest, TResponse : Result> UseCase<TRequest, TResponse>.decorate(): UseCaseBuilder<TRequest, TResponse> {
     return UseCaseBuilder(this)
